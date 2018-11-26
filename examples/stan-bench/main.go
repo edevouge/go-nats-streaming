@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/nats-io/go-nats"
-	"github.com/nats-io/go-nats-streaming"
+        "github.com/nats-io/go-nats-streaming"
 	"github.com/nats-io/go-nats/bench"
 )
 
@@ -38,10 +38,11 @@ const (
 	DefaultIgnoreOld          = false
 	DefaultMaxPubAcksInflight = 1000
 	DefaultClientID           = "benchmark"
+        DefaultSubscriberArrivalInterval = 50
 )
 
 func usage() {
-	log.Fatalf("Usage: stan-bench [-s server (%s)] [-tls] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-io] [-a] <subject>\n", nats.DefaultURL)
+	log.Fatalf("Usage: stan-bench [-s server (%s)] [-tls] [-c CLUSTER_ID] [-id CLIENT_ID] [-qgroup QUEUE_GROUP_NAME] [-np NUM_PUBLISHERS] [-ns NUM_SUBSCRIBERS] [-n NUM_MSGS] [-ms MESSAGE_SIZE] [-csv csvfile] [-mpa MAX_NUMBER_OF_PUBLISHED_ACKS_INFLIGHT] [-sai SUBSCRIBER_ARRIVAL_INTERVAL] [-io] [-a] <subject>\n", nats.DefaultURL)
 }
 
 var (
@@ -64,7 +65,8 @@ func main() {
 	var messageSize = flag.Int("ms", DefaultMessageSize, "Message size in bytes.")
 	var ignoreOld = flag.Bool("io", DefaultIgnoreOld, "Subscribers ignore old messages")
 	var maxPubAcks = flag.Int("mpa", DefaultMaxPubAcksInflight, "Max number of published acks in flight")
-	var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
+	var subscriberArrivalInterval = flag.Int("sai", DefaultSubscriberArrivalInterval, "Subscriber arrival interval (millisecond)")
+        var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
 
@@ -99,7 +101,8 @@ func main() {
 	// Run Subscribers first
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
-		subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
+		time.Sleep(time.Duration(*subscriberArrivalInterval) * time.Millisecond)
+                subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
 		go runSubscriber(&startwg, &donewg, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
 	}
 	startwg.Wait()
