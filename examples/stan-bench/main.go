@@ -71,12 +71,6 @@ func main() {
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
 
-	myuuid, err := uuid.NewV4()
-	if err != nil {
-		log.Fatalf("Cannot generate unique user id for publisher")
-	}
-	randstring := myuuid.String()
-
 	log.SetFlags(0)
 	flag.Usage = usage
 	flag.Parse()
@@ -111,7 +105,11 @@ func main() {
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
 		time.Sleep(time.Duration(*subscriberArrivalInterval) * time.Millisecond)
-    subID := fmt.Sprintf("%s-sub-%d-%s", *clientID, i, randstring)
+		myuuid, err := uuid.NewV4()
+		if err != nil {
+			log.Fatalf("Cannot generate unique user id for publisher")
+		}
+		subID := fmt.Sprintf("%s-sub-%d-%s", *clientID, i, myuuid.String())
 		go runSubscriber(&startwg, &donewg, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
 	}
 	startwg.Wait()
