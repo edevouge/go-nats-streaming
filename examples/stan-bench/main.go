@@ -39,7 +39,7 @@ const (
 	DefaultIgnoreOld          = false
 	DefaultMaxPubAcksInflight = 1000
 	DefaultClientID           = "benchmark"
-        DefaultSubscriberArrivalInterval = 50
+	DefaultSubscriberArrivalInterval = 50
 )
 
 func usage() {
@@ -75,6 +75,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Cannot generate unique user id for publisher")
 	}
+	randstring := myuuid.String()
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -104,15 +105,18 @@ func main() {
 	if *queue != "" {
 		qSubsLeft = int32(*numSubs)
 	}
+
+	log.Printf("Starting subscribers creation...")
 	// Run Subscribers first
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
 		time.Sleep(time.Duration(*subscriberArrivalInterval) * time.Millisecond)
-    subID := fmt.Sprintf("%s-sub-%d-%s", *clientID, i, *myuuid)
+    subID := fmt.Sprintf("%s-sub-%d-%s", *clientID, i, randstring)
 		go runSubscriber(&startwg, &donewg, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
 	}
 	startwg.Wait()
 
+  log.Printf("Starting publishers creation...")
 	// Now Publishers
 	startwg.Add(*numPubs)
 	pubCounts := bench.MsgsPerClient(*numMsgs, *numPubs)
