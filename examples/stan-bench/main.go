@@ -24,8 +24,9 @@ import (
 	"time"
 
 	"github.com/nats-io/go-nats"
-        "github.com/nats-io/go-nats-streaming"
+  "github.com/nats-io/go-nats-streaming"
 	"github.com/nats-io/go-nats/bench"
+	"github.com/nu7hatch/gouuid"
 )
 
 // Some sane defaults
@@ -66,9 +67,14 @@ func main() {
 	var ignoreOld = flag.Bool("io", DefaultIgnoreOld, "Subscribers ignore old messages")
 	var maxPubAcks = flag.Int("mpa", DefaultMaxPubAcksInflight, "Max number of published acks in flight")
 	var subscriberArrivalInterval = flag.Int("sai", DefaultSubscriberArrivalInterval, "Subscriber arrival interval (millisecond)")
-        var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
+  var clientID = flag.String("id", DefaultClientID, "Benchmark process base client ID")
 	var csvFile = flag.String("csv", "", "Save bench data to csv file")
 	var queue = flag.String("qgroup", "", "Queue group name")
+
+	myuuid, err := uuid.NewV4()
+	if err != nil {
+		log.Fatalf("Cannot generate unique user id for publisher")
+	}
 
 	log.SetFlags(0)
 	flag.Usage = usage
@@ -102,7 +108,7 @@ func main() {
 	startwg.Add(*numSubs)
 	for i := 0; i < *numSubs; i++ {
 		time.Sleep(time.Duration(*subscriberArrivalInterval) * time.Millisecond)
-                subID := fmt.Sprintf("%s-sub-%d", *clientID, i)
+    subID := fmt.Sprintf("%s-sub-%d-%s", *clientID, i, *myuuid)
 		go runSubscriber(&startwg, &donewg, opts, clusterID, subID, *queue, *numMsgs, *messageSize, *ignoreOld)
 	}
 	startwg.Wait()
